@@ -1,64 +1,170 @@
-import random
+import tkinter as tk
+from tkinter import scrolledtext
+from PIL import Image, ImageTk
 import pyttsx3
 import speech_recognition as sr
+import threading
 
-# Text to speech conversion
+# Initialize TTS engine
+engine = pyttsx3.init()
+
 def speak(text):
-    engine = pyttsx3.init()
     engine.say(text)
     engine.runAndWait()
 
-# Voice input recognition
 def listen():
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
-        print("🎤 Listening...")
+        chat_log.insert(tk.END, "🎤 Listening...\n")
+        chat_log.see(tk.END)
         recognizer.adjust_for_ambient_noise(source)
         try:
             audio = recognizer.listen(source)
             text = recognizer.recognize_google(audio)
-            print(f"You (Voice): {text}")
             return text.lower()
-        except:
-            print("🤖 Couldn't understand. Try again.")
-            return None
+        except sr.UnknownValueError:
+            return "I couldn't understand. Please try again."
+        except sr.RequestError:
+            return "Speech recognition service is unavailable."
 
-# Main chatbot function
-def chatbot():
-    print("🤖 Welcome to RoboAI Hub Chatbot! Ask about AI/Robotics.")
-    print("(Type question or press Enter for voice. Type 'exit' to quit)\n")
-    
-    # Knowledge base of Q&A pairs
-    responses = {
-        "what is roboai hub": "RoboAi Hub is a community in Jodhpur for robotics and AI education.",
-        "who can benefit from roboai hub": "Students to professionals can benefit from our programs.",
-        "what is artificial intelligence": "AI simulates human intelligence in machines.",
-        "what are the main types of ai": "Narrow AI (specific tasks) and General AI (human-like).",
-        "what is machine learning": "ML enables computers to learn from data without explicit programming.",
-        "how is ai used in robotics": "For object recognition, navigation and decision-making.",
-        "what is deep learning": "Uses neural networks to analyze complex data patterns.",
-        "what are neural networks": "Computational models inspired by human brain.",
-        "what is nlp": "Helps computers understand and generate human language.",
-        "what is computer vision": "Allows computers to interpret visual data.",
-        "where is roboai hub located": "Vaishnavi Tower, Ratanada, Jodhpur, Rajasthan.",
-    }
-    
-    while True:
-        user_input = input("You (Type or Enter for voice): ").strip().lower()
-        
+# Predefined responses
+responses = {
+    "what is roboai hub": "RoboAi Hub is a vibrant community and training center in Jodhpur, Rajasthan, dedicated to robotics and AI education.",
+    "who can benefit from the programs at roboai hub": "Individuals of all ages and skill levels, from school students to professionals looking to upskill in robotics and AI, can benefit.",
+    "what is artificial intelligence": "Artificial Intelligence (AI) is the simulation of human intelligence in machines that can perform tasks such as learning, reasoning, and problem-solving.",
+    "what are the main types of ai": "AI is classified into Narrow AI (specific tasks) and General AI (human-like intelligence).",
+    "what is machine learning": "Machine Learning (ML) is a subset of AI that enables computers to learn from data without being explicitly programmed.",
+    "how is ai used in robotics": "AI is used in robotics for object recognition, navigation, automation, and decision-making.",
+    "what is deep learning": "Deep learning is a subset of machine learning that uses multi-layered neural networks to analyze data.",
+    "what are neural networks": "Neural networks are computational models inspired by the human brain, used in deep learning and AI applications.",
+    "what is nlp": "Natural Language Processing (NLP) enables computers to understand, interpret, and generate human language in a meaningful way.",
+    "what is computer vision": "Computer vision allows computers to interpret and analyze visual data like images and videos.",
+    "what is reinforcement learning": "Reinforcement learning is a type of AI where an agent learns to make decisions by receiving rewards or penalties.",
+    "who is the father of ai": "John McCarthy is considered the father of Artificial Intelligence for his pioneering work in the field.",
+    "what are the applications of ai": "AI is used in healthcare, finance, self-driving cars, robotics, entertainment, and many other industries.",
+    "what are the types of ai": "AI is categorized into three types: Narrow AI, General AI, and Super AI.",
+    "what is the turing test": "The Turing Test evaluates a machine's ability to exhibit intelligent behavior equivalent to or indistinguishable from that of a human.",
+    "does roboai hub provide hands-on learning opportunities": "Yes, RoboAI Hub features open-source labs equipped for hands-on projects and research.",
+    "where is roboai hub located": "RoboAi Hub is located at Vaishnavi Tower, Ratanada, Jodhpur, Rajasthan 342001, India.",
+    "does roboai hub engage in research and development": "Yes, RoboAI Hub has a dedicated focus on R&D innovation, encouraging collaboration between mentors and students.",
+}
+
+# --------------- GUI SETUP ---------------
+root = tk.Tk()
+root.title("RoboAI Hub Chatbot")
+root.geometry("650x550")
+
+is_dark_mode = True
+
+# Theme styles
+dark_theme = {
+    "bg": "#1e1e1e",
+    "fg": "white",
+    "entry_bg": "#2e2e2e",
+    "button_bg": "#007acc"
+}
+
+light_theme = {
+    "bg": "#f5f5f5",
+    "fg": "black",
+    "entry_bg": "white",
+    "button_bg": "#007acc"
+}
+
+# Load logo image based on theme
+def load_logo_image():
+    try:
+        img_path = "roboai_logo_light.png" if is_dark_mode else "roboai_logo_dark.png"
+        logo_img = Image.open(img_path)
+        logo_img = logo_img.resize((60, 60))
+        return ImageTk.PhotoImage(logo_img)
+    except:
+        return None
+
+# Apply current theme
+def apply_theme():
+    theme = dark_theme if is_dark_mode else light_theme
+    root.configure(bg=theme["bg"])
+    header_frame.configure(bg=theme["bg"])
+    title_label.configure(bg=theme["bg"], fg=theme["fg"])
+    logo_photo = load_logo_image()
+    if logo_photo:
+        logo_label.configure(image=logo_photo, text="")
+        logo_label.image = logo_photo
+    else:
+        logo_label.configure(text="🤖", image="", font=("Arial", 30))
+
+    chat_log.configure(bg=theme["entry_bg"], fg=theme["fg"], insertbackground=theme["fg"])
+    input_frame.configure(bg=theme["bg"])
+    input_entry.configure(bg=theme["entry_bg"], fg=theme["fg"], insertbackground=theme["fg"])
+    send_button.configure(bg=theme["button_bg"], fg="white")
+    toggle_button.configure(bg=theme["button_bg"], fg="white")
+
+def toggle_theme():
+    global is_dark_mode
+    is_dark_mode = not is_dark_mode
+    apply_theme()
+
+# Header
+header_frame = tk.Frame(root)
+header_frame.pack(pady=10)
+
+logo_photo = load_logo_image()
+if logo_photo:
+    logo_label = tk.Label(header_frame, image=logo_photo)
+    logo_label.image = logo_photo
+else:
+    logo_label = tk.Label(header_frame, text="🤖", font=("Arial", 30))
+logo_label.pack(side=tk.LEFT, padx=10)
+
+title_label = tk.Label(header_frame, text="RoboAI Hub Chatbot", font=("Helvetica", 20, "bold"))
+title_label.pack(side=tk.LEFT)
+
+toggle_button = tk.Button(header_frame, text="Toggle Theme", command=toggle_theme, font=("Arial", 10, "bold"))
+toggle_button.pack(side=tk.RIGHT, padx=10)
+
+# Chat log
+chat_log = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=70, height=20, font=("Arial", 12))
+chat_log.pack(padx=10, pady=10)
+
+# Input area
+input_frame = tk.Frame(root)
+input_frame.pack(pady=5)
+
+input_entry = tk.Entry(input_frame, width=50, font=("Arial", 12))
+input_entry.pack(side=tk.LEFT, padx=5)
+
+def handle_input():
+    user_input = input_entry.get().strip().lower()
+    input_entry.delete(0, tk.END)
+
+    if user_input == "":
+        user_input = listen()
+
+    if user_input:
+        chat_log.insert(tk.END, f"You: {user_input}\n")
         if user_input == "exit":
-            speak("Goodbye!")
-            print("🤖 Goodbye!")
-            break
-        
-        if not user_input:
-            user_input = listen()
-            if not user_input:
-                continue
-        
-        # Get response or default message
-        print(f"🤖 {responses.get(user_input, 'Ask something else.')}\n")
-        speak(responses.get(user_input, 'Ask something else.'))
+            response = "Goodbye! Have a great day!"
+            chat_log.insert(tk.END, f"🤖: {response}\n")
+            speak(response)
+            root.quit()
+        else:
+            response = responses.get(user_input, "I'm still learning. Can you ask something else?")
+            chat_log.insert(tk.END, f"🤖: {response}\n")
+            speak(response)
+        chat_log.see(tk.END)
 
-# Run the chatbot
-chatbot()
+def threaded_input():
+    threading.Thread(target=handle_input).start()
+
+send_button = tk.Button(input_frame, text="Start Chat", command=threaded_input, font=("Arial", 12))
+send_button.pack(side=tk.LEFT)
+
+# Press Enter to send
+root.bind('<Return>', lambda event: threaded_input())
+
+# Greeting
+chat_log.insert(tk.END, "🤖 Welcome to RoboAI Hub Chatbot!\n(Type your question or press Enter to use voice input. Type 'exit' to quit.)\n\n")
+
+apply_theme()
+root.mainloop()
