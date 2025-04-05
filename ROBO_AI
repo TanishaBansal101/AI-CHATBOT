@@ -1,0 +1,64 @@
+import random
+import pyttsx3
+import speech_recognition as sr
+
+# Text to speech conversion
+def speak(text):
+    engine = pyttsx3.init()
+    engine.say(text)
+    engine.runAndWait()
+
+# Voice input recognition
+def listen():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("🎤 Listening...")
+        recognizer.adjust_for_ambient_noise(source)
+        try:
+            audio = recognizer.listen(source)
+            text = recognizer.recognize_google(audio)
+            print(f"You (Voice): {text}")
+            return text.lower()
+        except:
+            print("🤖 Couldn't understand. Try again.")
+            return None
+
+# Main chatbot function
+def chatbot():
+    print("🤖 Welcome to RoboAI Hub Chatbot! Ask about AI/Robotics.")
+    print("(Type question or press Enter for voice. Type 'exit' to quit)\n")
+    
+    # Knowledge base of Q&A pairs
+    responses = {
+        "what is roboai hub": "RoboAi Hub is a community in Jodhpur for robotics and AI education.",
+        "who can benefit from roboai hub": "Students to professionals can benefit from our programs.",
+        "what is artificial intelligence": "AI simulates human intelligence in machines.",
+        "what are the main types of ai": "Narrow AI (specific tasks) and General AI (human-like).",
+        "what is machine learning": "ML enables computers to learn from data without explicit programming.",
+        "how is ai used in robotics": "For object recognition, navigation and decision-making.",
+        "what is deep learning": "Uses neural networks to analyze complex data patterns.",
+        "what are neural networks": "Computational models inspired by human brain.",
+        "what is nlp": "Helps computers understand and generate human language.",
+        "what is computer vision": "Allows computers to interpret visual data.",
+        "where is roboai hub located": "Vaishnavi Tower, Ratanada, Jodhpur, Rajasthan.",
+    }
+    
+    while True:
+        user_input = input("You (Type or Enter for voice): ").strip().lower()
+        
+        if user_input == "exit":
+            speak("Goodbye!")
+            print("🤖 Goodbye!")
+            break
+        
+        if not user_input:
+            user_input = listen()
+            if not user_input:
+                continue
+        
+        # Get response or default message
+        print(f"🤖 {responses.get(user_input, 'Ask something else.')}\n")
+        speak(responses.get(user_input, 'Ask something else.'))
+
+# Run the chatbot
+chatbot()
